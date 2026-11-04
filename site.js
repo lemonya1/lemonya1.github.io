@@ -72,7 +72,7 @@
    card.hidden = type !== 'all' && card.dataset.category !== type;
    if (!card.hidden) { count++; card.classList.add('is-visible'); } else card.querySelector('video')?.pause();
   });
-  $('.archive-count').textContent = `${pad(count)} / 03 项档案`; updateScroll();
+  $('.archive-count').textContent = `${pad(count)} / ${pad($$('.work-card[data-category]').length)} 项档案`; updateScroll();
  }));
 
  // The existing silent clip loads only after an intentional pointer hover.
