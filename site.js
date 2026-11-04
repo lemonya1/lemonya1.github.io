@@ -38,33 +38,6 @@
   $$('.current .section-heading, .work-card, .about').forEach(item => { item.classList.add('reveal-item'); observer.observe(item); });
  }
 
- const hero = $('.hero');
- if (hero && $('[data-focus-scene]')) {
-  const scenes = {
-   house: {src: 'assets/cyberhouse.jpg', alt: '黄色科幻建筑坐落在山水环境中，来自建筑场景练习', caption: '练习影像 / CYBERHOUSE', href: 'study-cyberhouse.html'},
-   flight: {src: 'assets/flight.jpg', alt: '蓝色尾焰的飞船穿行于暖光照亮的洞穴，2024 年场景练习', caption: '练习影像 / FLIGHT STUDY · 2024', href: 'study-flight.html'}
-  };
-  let request = 0;
-  $$('[data-scene]').forEach(button => button.addEventListener('click', async () => {
-   const scene = scenes[button.dataset.scene], ticket = ++request;
-   const preload = new Image(); preload.src = scene.src;
-   try { await preload.decode(); } catch { return; }
-   if (ticket !== request) return;
-   const img = $('.hero-image'); img.src = scene.src; img.alt = scene.alt;
-   $('[data-scene-caption]').textContent = scene.caption; $('[data-scene-link]').href = scene.href;
-   $$('[data-scene]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-   if (!reducedMotion.matches) img.animate([{opacity: .45, transform: 'scale(1.015)'}, {opacity: 1, transform: 'scale(1)'}], {duration: 550, easing: 'ease-out'});
-  }));
-  const focusButton = $('[data-focus-scene]');
-  const focusScene = enabled => {
-   hero.classList.toggle('scene-focused', enabled); $('.hero-content').inert = enabled;
-   focusButton.setAttribute('aria-pressed', String(enabled));
-   focusButton.innerHTML = enabled ? '返回介绍 <span aria-hidden="true">↙</span>' : '专注画面 <span aria-hidden="true">⤢</span>';
-  };
-  focusButton.addEventListener('click', () => focusScene(!hero.classList.contains('scene-focused')));
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') focusScene(false); });
- }
-
  $$('[data-filter]').forEach(button => button.addEventListener('click', () => {
   const type = button.dataset.filter; let count = 0;
   $$('[data-filter]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));

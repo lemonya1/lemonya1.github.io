@@ -1,100 +1,124 @@
 (() => {
  'use strict';
- const opening = document.querySelector('.opening');
+ const opening = document.querySelector('.lemon-opening');
  const replay = document.querySelector('[data-opening-replay]');
- if (!opening || !replay || typeof opening.showModal !== 'function' || typeof opening.animate !== 'function') return;
+ const logo = document.querySelector('.type-title .lemon-mark');
+ if (!opening || !replay || !logo) return;
+ if (typeof opening.showModal !== 'function' || typeof opening.animate !== 'function') { replay.hidden = true; return; }
  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
  const enter = opening.querySelector('[data-opening-enter]');
  const pause = opening.querySelector('[data-opening-pause]');
- const aperture = opening.querySelector('.opening-aperture');
- const frame = opening.querySelector('.opening-frame');
- const title = opening.querySelector('.opening-title-block');
+ const word = opening.querySelector('.opening-word');
  const track = opening.querySelector('.opening-track span');
- const note = opening.querySelector('.opening-frame-note');
- const sessionKey = 'wyh-opening-cinematic-v3';
- const duration = 3400;
- let animations = [], watchdog, opener, overflow, paused = false, pointerFrame = 0;
-
- const remember = () => { try { sessionStorage.setItem(sessionKey, 'seen'); } catch { /* Storage is optional. */ } };
+ const sessionKey = 'wyh-opening-lemon-v1';
+ const duration = 2400, ns = 'http://www.w3.org/2000/svg';
+ let animations = [], master, watchdog, opener, overflow = '', paused = false, cleaned = true;
+ const remember = () => { try { sessionStorage.setItem(sessionKey, 'seen'); } catch {} };
  const seen = () => { try { return sessionStorage.getItem(sessionKey) === 'seen'; } catch { return false; } };
  const restore = () => {
-  clearTimeout(watchdog); cancelAnimationFrame(pointerFrame); pointerFrame = 0;
-  animations.forEach(animation => animation.cancel()); animations = [];
-  document.body.style.overflow = overflow || '';
-  opening.style.removeProperty('--opening-x'); opening.style.removeProperty('--opening-y');
-  track.style.removeProperty('transform'); pause.hidden = false;
-  paused = false; pause.setAttribute('aria-pressed', 'false'); pause.textContent = '暂停';
+  if (cleaned) return;
+  cleaned = true; clearTimeout(watchdog);
+  animations.forEach(animation => animation.cancel()); animations = []; master = null;
+  document.body.classList.remove('lemon-opening-active');
+  document.body.style.overflow = overflow;
+  word.replaceChildren(); word.removeAttribute('style'); track.removeAttribute('style');
+  paused = false; pause.hidden = false; pause.textContent = '暂停'; pause.setAttribute('aria-pressed', 'false');
   opener?.focus({preventScroll: true});
  };
- const finish = (animateHero = false) => {
-  if (!opening.open) return;
-  opening.close(); restore();
-  if (animateHero && !reduced.matches && !document.querySelector('.hero')?.classList.contains('scene-focused')) {
-   document.querySelector('.hero-content')?.animate([{opacity: 0, transform: 'translateY(14px)'}, {opacity: 1, transform: 'translateY(0)'}], {duration: 650, easing: 'cubic-bezier(.2,.7,.2,1)'});
-  }
- };
+ const finish = () => { if (opening.open) opening.close(); restore(); };
  const safetyTimer = () => {
   clearTimeout(watchdog);
-  const remaining = Math.max(0, duration - Number(animations[0]?.currentTime || 0));
-  watchdog = setTimeout(() => finish(), remaining + 800);
+  watchdog = setTimeout(finish, Math.max(0, duration - Number(master?.currentTime || 0)) + 900);
+ };
+ const createWord = () => {
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', logo.getAttribute('viewBox'));
+  svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('focusable', 'false');
+  const defs = document.createElementNS(ns, 'defs'); svg.append(defs);
+  const bands = [[0, 95], [95, 66], [161, 89]], pieces = [];
+  bands.forEach(([y, height], band) => {
+   const clip = document.createElementNS(ns, 'clipPath'), rect = document.createElementNS(ns, 'rect');
+   clip.id = 'lemon-intro-band-' + band; clip.setAttribute('clipPathUnits', 'userSpaceOnUse');
+   rect.setAttribute('x', '-100'); rect.setAttribute('y', String(y)); rect.setAttribute('width', '1330'); rect.setAttribute('height', String(height));
+   clip.append(rect); defs.append(clip);
+  });
+  [...logo.querySelectorAll('path[data-glyph]')].forEach((path, letter) => {
+   bands.forEach((_, band) => {
+    const piece = document.createElementNS(ns, 'g'), mask = document.createElementNS(ns, 'g');
+    piece.classList.add('lemon-piece'); piece.dataset.letter = String(letter); piece.dataset.band = String(band);
+    mask.setAttribute('clip-path', 'url(#lemon-intro-band-' + band + ')');
+    const glyph = path.cloneNode(true); glyph.removeAttribute('data-glyph'); mask.append(glyph); piece.append(mask); svg.append(piece);
+    pieces.push({element: piece, letter, band});
+   });
+  });
+  word.replaceChildren(svg); return pieces;
  };
  const play = (manual = false) => {
   if (opening.open) return;
-  opener = manual ? replay : document.querySelector('.hero .primary-link');
-  overflow = document.body.style.overflow;
+  opener = manual ? replay : document.querySelector('.type-actions .primary-link');
+  overflow = document.body.style.overflow; cleaned = false;
   try {
-   opening.showModal(); document.body.style.overflow = 'hidden'; enter.focus({preventScroll: true}); remember();
-   if (reduced.matches) { pause.hidden = true; track.style.transform = 'scaleX(1)'; return; }
-   safetyTimer();
-   const inset = innerWidth <= 540 ? '24% 8% 30% 8%' : '24% 18% 24% 18%';
+   const pieces = createWord();
+   document.body.style.overflow = 'hidden';
+   const target = logo.getBoundingClientRect();
+   if (!target.width || !target.height) { finish(); return; }
+   const startWidth = Math.min(innerWidth * .84, 980);
+   const scale = startWidth / target.width;
+   const dx = innerWidth / 2 - (target.left + target.width / 2);
+   const dy = innerHeight * .46 - (target.top + target.height / 2);
+   Object.assign(word.style, {left: target.left + 'px', top: target.top + 'px', width: target.width + 'px', height: target.height + 'px'});
+   opening.showModal(); document.body.classList.add('lemon-opening-active'); enter.focus({preventScroll: true}); remember();
+   if (reduced.matches) {
+    pause.hidden = true; track.style.transform = 'scaleX(1)';
+    word.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')'; return;
+   }
    const timing = {duration, fill: 'both', easing: 'linear'};
-   const add = (element, keyframes) => {
-    const animation = element.animate(keyframes, timing); animations.push(animation); return animation;
-   };
-   add(aperture, [
-    {clipPath: 'inset(49.8% 49%)', offset: 0, easing: 'cubic-bezier(.2,.7,.2,1)'},
-    {clipPath: `inset(${inset})`, offset: .23}, {clipPath: `inset(${inset})`, offset: .64, easing: 'cubic-bezier(.7,0,.2,1)'},
-    {clipPath: 'inset(0%)', offset: .94}, {clipPath: 'inset(0%)', offset: 1}
+   const add = (element, frames) => { const animation = element.animate(frames, timing); animations.push(animation); return animation; };
+   const start = 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')';
+   add(word, [
+    {transform: start, opacity: 0, offset: 0}, {transform: start, opacity: 1, offset: .12},
+    {transform: start, opacity: 1, offset: .54, easing: 'cubic-bezier(.22,.75,.2,1)'},
+    {transform: 'translate(0,0) scale(1)', opacity: 1, offset: .94}, {transform: 'translate(0,0) scale(1)', opacity: 1, offset: 1}
    ]);
-   add(frame, [
-    {inset: '49.8% 49%', opacity: .35, offset: 0, easing: 'cubic-bezier(.2,.7,.2,1)'},
-    {inset, opacity: 1, offset: .23}, {inset, opacity: 1, offset: .64, easing: 'cubic-bezier(.7,0,.2,1)'},
-    {inset: '0%', opacity: 0, offset: .94}, {inset: '0%', opacity: 0, offset: 1}
-   ]);
-   add(title, [
-    {opacity: 0, transform: 'translateY(30px)', offset: 0}, {opacity: 0, transform: 'translateY(30px)', offset: .1, easing: 'cubic-bezier(.2,.7,.2,1)'},
-    {opacity: 1, transform: 'translateY(0)', offset: .3}, {opacity: 1, transform: 'translateY(0)', offset: .64},
-    {opacity: 0, transform: 'translateY(-22px)', offset: .86}, {opacity: 0, transform: 'translateY(-22px)', offset: 1}
-   ]);
-   add(note, [{opacity: 0, offset: 0}, {opacity: 1, offset: .3}, {opacity: 1, offset: .64}, {opacity: 0, offset: .8}, {opacity: 0, offset: 1}]);
-   add(track, [{transform: 'scaleX(0)'}, {transform: 'scaleX(1)'}]);
-   const exit = add(opening, [{opacity: 1, offset: 0}, {opacity: 1, offset: .88}, {opacity: 0, offset: 1}]);
-   exit.onfinish = () => finish(true);
+   pieces.forEach(({element, letter, band}) => {
+    const direction = letter % 2 === 0 ? -1 : 1;
+    const x = band === 1 ? direction * 32 : (letter - 2) * 13 + (band === 0 ? -15 : 15);
+    const y = band === 0 ? -46 : band === 2 ? 46 : direction * 5;
+    add(element, [
+     {transform: 'translate(0,0)', offset: 0}, {transform: 'translate(0,0)', offset: .21, easing: 'cubic-bezier(.3,0,.2,1)'},
+     {transform: 'translate(' + x + 'px,' + y + 'px)', offset: .50 + letter * .012},
+     {transform: 'translate(' + x + 'px,' + y + 'px)', offset: .58, easing: 'cubic-bezier(.22,.8,.2,1)'},
+     {transform: 'translate(0,0)', offset: .92 + letter * .012}, {transform: 'translate(0,0)', offset: 1}
+    ]);
+   });
+   [['.opening-curtain-top', '-101%'], ['.opening-curtain-bottom', '101%']].forEach(([selector, to]) => {
+    add(opening.querySelector(selector), [{transform: 'translateY(0)', offset: 0}, {transform: 'translateY(0)', offset: .21, easing: 'cubic-bezier(.5,0,.2,1)'}, {transform: 'translateY(' + to + ')', offset: .62}, {transform: 'translateY(' + to + ')', offset: 1}]);
+   });
+   ['.opening-grid', '.opening-meta'].forEach(selector => add(opening.querySelector(selector), [{opacity: 1, offset: 0}, {opacity: 1, offset: .3}, {opacity: 0, offset: .6}, {opacity: 0, offset: 1}]));
+   [['.type-copy', .62], ['.type-actions', .70], ['.type-register', .76]].forEach(([selector, offset]) => {
+    add(document.querySelector(selector), [{opacity: 0, transform: 'translateY(12px)', offset: 0}, {opacity: 0, transform: 'translateY(12px)', offset, easing: 'ease-out'}, {opacity: 1, transform: 'translateY(0)', offset: Math.min(.99, offset + .22)}, {opacity: 1, transform: 'translateY(0)', offset: 1}]);
+   });
+   master = add(track, [{transform: 'scaleX(0)'}, {transform: 'scaleX(1)'}]);
+   master.onfinish = finish; safetyTimer();
   } catch { finish(); }
  };
-
- enter.addEventListener('click', () => finish(true));
- opening.addEventListener('cancel', event => { event.preventDefault(); finish(); });
- opening.addEventListener('close', () => { if (animations.length) restore(); });
+ enter.addEventListener('click', finish);
+ replay.addEventListener('click', () => play(true));
  pause.addEventListener('click', () => {
-  paused = !paused; pause.setAttribute('aria-pressed', String(paused)); pause.textContent = paused ? '继续' : '暂停';
-  // Pausing during the initial shutter reveal holds on a legible title frame.
-  if (paused && Number(animations[0]?.currentTime || 0) < duration * .3) animations.forEach(animation => { animation.currentTime = duration * .3; });
+  if (!master) return;
+  paused = !paused; pause.textContent = paused ? '继续' : '暂停'; pause.setAttribute('aria-pressed', String(paused));
+  // Hold a fully legible word when pausing during its first appearance.
+  if (paused && Number(master.currentTime || 0) < duration * .13) animations.forEach(animation => { animation.currentTime = duration * .13; });
   animations.forEach(animation => paused ? animation.pause() : animation.play());
   if (paused) clearTimeout(watchdog); else safetyTimer();
  });
- replay.addEventListener('click', () => play(true));
+ opening.addEventListener('cancel', event => { event.preventDefault(); finish(); });
+ opening.addEventListener('close', restore);
  opening.addEventListener('wheel', event => { if (Math.abs(event.deltaY) > 15) finish(); }, {passive: true});
- opening.addEventListener('pointermove', event => {
-  if (event.pointerType !== 'mouse' || reduced.matches || pointerFrame) return;
-  const x = (event.clientX / innerWidth - .5) * 12, y = (event.clientY / innerHeight - .5) * 8;
-  pointerFrame = requestAnimationFrame(() => { opening.style.setProperty('--opening-x', `${x}px`); opening.style.setProperty('--opening-y', `${y}px`); pointerFrame = 0; });
- });
- opening.addEventListener('pointerleave', () => { opening.style.setProperty('--opening-x', '0px'); opening.style.setProperty('--opening-y', '0px'); });
  document.addEventListener('visibilitychange', () => { if (document.hidden) finish(); });
- addEventListener('pagehide', () => finish());
+ addEventListener('pagehide', finish);
+ addEventListener('resize', () => { if (opening.open) finish(); });
  reduced.addEventListener('change', () => { if (reduced.matches) finish(); });
- // Anchor links, return navigation, and reduced-motion preferences go straight to the work.
  const returning = performance.getEntriesByType('navigation')[0]?.type === 'back_forward';
  if (!location.hash && !returning && !reduced.matches && !seen()) play();
 })();
