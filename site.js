@@ -22,7 +22,7 @@
   const button = buttons[current];
   const img = dialog.querySelector('img');
   img.src = button.dataset.image;
-  img.alt = button.querySelector('img').alt;
+  img.alt = button.dataset.imageAlt || button.querySelector('img')?.alt || button.getAttribute('aria-label') || '';
   dialog.querySelector('.lightbox-caption').textContent = img.alt;
   dialog.querySelector('.lightbox-count').textContent = `${current + 1} / ${buttons.length}`;
   previous.disabled = current === 0;
@@ -51,3 +51,4 @@
   if (opener) opener.focus();
  });
 })();
+

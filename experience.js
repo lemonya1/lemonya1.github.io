@@ -13,10 +13,10 @@
  motionButton?.addEventListener('click',()=>{motionOff=!motionOff;setMotion();try{localStorage.setItem('wyh-motion',motionOff?'off':'on');}catch{}});
  reduced.addEventListener('change',event=>{motionOff=event.matches;setMotion();});
  const scenes={
-  snow:{name:'雪地场景',type:'场景作品 · 完成画面',note:'完成画面与白模制作过程',link:'project-snow.html',number:'01'},
-  cyberhouse:{name:'CyberHouse',type:'环境场景 · 练习项目',note:'山水环境中的科幻建筑',link:'study-cyberhouse.html',number:'02'},
+  snow:{name:'雪地场景',type:'场景作品 · 完成画面',note:'完成画面与白模制作过程',link:'project-snow.html',number:'02'},
+  cyberhouse:{name:'CyberHouse',type:'环境场景 · 练习项目',note:'山水环境中的黄色科幻建筑',link:'study-cyberhouse.html',number:'01'},
   gamejam:{name:'Game Jam',type:'团队场景 · 2026',note:'场景搭建 / 灯光 / 素材库资产',link:'study-gamejam.html',number:'04'},
-  flight:{name:'飞船穿越洞穴',type:'镜头练习 · 2024',note:'约 2.8 秒 · 原速度 · 无音轨',link:'study-flight.html',number:'05'},
+  flight:{name:'飞船穿越洞穴',type:'镜头练习 · 2024',note:'静态场景画面 · 制作记录',link:'study-flight.html',number:'05'},
   sketches:{name:'3D 场景速写',type:'参考临摹 · 5 组作品与练习',note:'空间 / 体块 / 光影',link:'study-sketches.html',number:'03'}
  };
  const sceneButtons=[...document.querySelectorAll('[data-scene]')];
@@ -57,19 +57,16 @@
   document.querySelector('.editorial-grid').classList.toggle('is-filtered',value!=='all');
   document.querySelector('.filter-status').textContent=`${count} 组作品与练习`;
  }));
- const range=document.querySelector('#comparison-range');
- range?.addEventListener('input',()=>{range.closest('.compare-stage').style.setProperty('--split',`${range.value}%`);range.setAttribute('aria-valuetext',`参考画面占 ${range.value}%，本人练习占 ${100-Number(range.value)}%`);});
- const film=document.querySelector('.film-dialog');
- const filmButton=document.querySelector('[data-open-film]');
- let previousOverflow='';
- filmButton?.addEventListener('click',()=>{
-  if(typeof film.showModal!=='function'){location.href='study-flight.html';return;}
-  previousOverflow=document.body.style.overflow;film.showModal();document.body.style.overflow='hidden';film.querySelector('[data-close-film]').focus();
-  const video=film.querySelector('video');video.currentTime=0;video.play().catch(()=>{});
+ // Each comparison keeps its own value, including keyboard and touch input.
+ document.querySelectorAll('.compare-stage input[type="range"]').forEach(range=>{
+  const updateComparison=()=>{
+   const value=Math.max(0,Math.min(100,Number(range.value)));
+   range.closest('.compare-stage').style.setProperty('--split',`${value}%`);
+   range.setAttribute('aria-valuetext',`参考画面占 ${value}%，本人练习占 ${100-value}%`);
+  };
+  range.addEventListener('input',updateComparison);
+  updateComparison();
  });
- film?.querySelector('[data-close-film]').addEventListener('click',()=>film.close());
- film?.addEventListener('click',event=>{if(event.target===film){const r=film.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)film.close();}});
- film?.addEventListener('close',()=>{film.querySelector('video').pause();document.body.style.overflow=previousOverflow;filmButton.focus();});
  let scrollFrame=0;
  function updateScroll(){const total=document.documentElement.scrollHeight-innerHeight;document.documentElement.style.setProperty('--reading',total>0?Math.max(0,Math.min(1,scrollY/total)):0);scrollFrame=0;}
  addEventListener('scroll',()=>{if(!scrollFrame)scrollFrame=requestAnimationFrame(updateScroll);},{passive:true});updateScroll();
@@ -78,3 +75,4 @@
   document.querySelectorAll('#studies,#current,#about').forEach(section=>observer.observe(section));
  }
 })();
+
